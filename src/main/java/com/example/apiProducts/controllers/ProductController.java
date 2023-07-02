@@ -14,6 +14,9 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
+import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
+
 @RestController
 public class ProductController {
     @Autowired
@@ -30,16 +33,31 @@ public class ProductController {
 
     @GetMapping("/products")
     public ResponseEntity<List<ProductModel>> getAllProducts(){
-        return ResponseEntity.status(HttpStatus.OK).body(productRepository.findAll());
+        List<ProductModel> productsList = productRepository.findAll();
+        if (!productsList.isEmpty()) {
+            for (ProductModel product : productsList){
+                //Adiciona uma linha em cada produto da lista, que redireciona para os detalhes do produto
+                product.add(linkTo(methodOn(ProductController.class).getOneProduct(product.getIdProduct())).withSelfRel());
+            }
+        }
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(productsList);
     }
 
     @GetMapping("/products/{id}")
     public ResponseEntity<Object> getOneProduct(@PathVariable(value = "id") UUID id){
         Optional<ProductModel> product0 = productRepository.findById(id);
+
         if (product0.isEmpty()){
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Product not found");
+            return ResponseEntity
+                    .status(HttpStatus.NOT_FOUND)
+                    .body("Product not found");
         }
-        return ResponseEntity.status(HttpStatus.OK).body(product0.get());
+        product0.get().add(linkTo(methodOn(ProductController.class).getAllProducts()).withRel("Products List"));
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(product0.get());
     }
 
     @PutMapping("/products/{id}")
@@ -47,23 +65,31 @@ public class ProductController {
                                                 @RequestBody @Valid ProductRecordDto updatedProduct){
         Optional<ProductModel> product0 = productRepository.findById(id);
         if (product0.isEmpty()){
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Product not found");
+            return ResponseEntity
+                    .status(HttpStatus.NOT_FOUND)
+                    .body("Product not found");
         }
 
         var productModel = product0.get();
         BeanUtils.copyProperties(updatedProduct, productModel);
-        return ResponseEntity.status(HttpStatus.OK).body(productRepository.save(productModel));
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(productRepository.save(productModel));
     }
 
     @DeleteMapping("/products/{id}")
     public ResponseEntity<Object> deleteProduct(@PathVariable(value = "id") UUID id){
         Optional<ProductModel> product0 = productRepository.findById(id);
         if (product0.isEmpty()){
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Product not found");
+            return ResponseEntity
+                    .status(HttpStatus.NOT_FOUND)
+                    .body("Product not found");
         }
 
         productRepository.delete(product0.get());
-        return ResponseEntity.status(HttpStatus.OK).body("Product deleted sucessfully.");
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body("Product deleted sucessfully.");
     }
 
 }
