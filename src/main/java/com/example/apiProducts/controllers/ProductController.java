@@ -3,10 +3,15 @@ package com.example.apiProducts.controllers;
 import com.example.apiProducts.dtos.ProductRecordDto;
 import com.example.apiProducts.models.ProductModel;
 import com.example.apiProducts.repositories.ProductRepository;
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.responses.ApiResponse;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,11 +23,24 @@ import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.linkTo;
 import static org.springframework.hateoas.server.mvc.WebMvcLinkBuilder.methodOn;
 
 @RestController
+@RequestMapping(value = "/", produces = {"application/json"})
+@Tag(name = "Produtos")
+//http://localhost:8080/swagger-ui/index.html#/
 public class ProductController {
     @Autowired
     ProductRepository productRepository;
 
-    @PostMapping("/products")
+    @Operation(summary = "Realiza o insert do Produto na base de dados.",description = "Insere um produto.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Produto inserido com sucesso!"),
+            @ApiResponse(responseCode = "201", description = "Produto inserido com sucesso!"),
+            @ApiResponse(responseCode = "400", description = "Erro ao inserir, verifique os parametros!"),
+            @ApiResponse(responseCode = "415", description = "Tipo de dado não suportado, verifique os parametros!"),
+            @ApiResponse(responseCode = "500", description = "Erro no servidor!")
+    })
+    @PostMapping(value = "/products",
+                 consumes = MediaType.APPLICATION_JSON_VALUE,
+                 produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<ProductModel> saveProduct(@RequestBody @Valid ProductRecordDto product){
         var productModel = new ProductModel();
         BeanUtils.copyProperties(product, productModel);
@@ -31,6 +49,14 @@ public class ProductController {
                 .body(productRepository.save(productModel));
     }
 
+    @Operation(
+            summary = "Realiza a busca de todos os produtos na base de dados.",
+            description = "Recupera a lista de todos os produto.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Busca realizada com sucesso!"),
+            @ApiResponse(responseCode = "422", description = "Parâmetros inválidos!"),
+            @ApiResponse(responseCode = "500", description = "Erro no servidor!")
+    })
     @GetMapping("/products")
     public ResponseEntity<List<ProductModel>> getAllProducts(){
         List<ProductModel> productsList = productRepository.findAll();
@@ -44,6 +70,15 @@ public class ProductController {
                 .status(HttpStatus.OK)
                 .body(productsList);
     }
+    @Operation(
+            summary = "Realiza a busca pelo id de um produto na base de dados.",
+            description = "Recupera um produto pelo seu id."
+    )
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Busca realizada com sucesso!"),
+            @ApiResponse(responseCode = "422", description = "Parâmetro inválido!"),
+            @ApiResponse(responseCode = "500", description = "Erro no servidor!")
+    })
 
     @GetMapping("/products/{id}")
     public ResponseEntity<Object> getOneProduct(@PathVariable(value = "id") UUID id){
@@ -59,8 +94,18 @@ public class ProductController {
                 .status(HttpStatus.OK)
                 .body(product0.get());
     }
-
-    @PutMapping("/products/{id}")
+    @Operation(
+            summary = "Realiza a atualização de um produto na base de dados.",
+            description = "Atualiza um produto.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Update realizado com sucesso!"),
+            @ApiResponse(responseCode = "415", description = "Tipo de dado não suportado, verifique os parametros!"),
+            @ApiResponse(responseCode = "422", description = "Parâmetros inválidos!"),
+            @ApiResponse(responseCode = "500", description = "Erro no servidor!")
+    })
+    @PutMapping(value = "/products/{id}",
+                consumes = MediaType.APPLICATION_JSON_VALUE,
+                produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<Object> updateProduct(@PathVariable(value = "id") UUID id,
                                                 @RequestBody @Valid ProductRecordDto updatedProduct){
         Optional<ProductModel> product0 = productRepository.findById(id);
@@ -76,7 +121,14 @@ public class ProductController {
                 .status(HttpStatus.OK)
                 .body(productRepository.save(productModel));
     }
-
+    @Operation(
+            summary = "Realiza a remoção de um produto na base de dados.",
+            description = "Remove um produto.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Produto excluído com sucesso!"),
+            @ApiResponse(responseCode = "422", description = "Parâmetro inválido!"),
+            @ApiResponse(responseCode = "500", description = "Erro no servidor!")
+    })
     @DeleteMapping("/products/{id}")
     public ResponseEntity<Object> deleteProduct(@PathVariable(value = "id") UUID id){
         Optional<ProductModel> product0 = productRepository.findById(id);
