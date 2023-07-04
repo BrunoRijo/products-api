@@ -70,6 +70,7 @@ public class ProductController {
                 .status(HttpStatus.OK)
                 .body(productsList);
     }
+
     @Operation(
             summary = "Realiza a busca pelo id de um produto na base de dados.",
             description = "Recupera um produto pelo seu id."
@@ -79,7 +80,6 @@ public class ProductController {
             @ApiResponse(responseCode = "422", description = "Parâmetro inválido!"),
             @ApiResponse(responseCode = "500", description = "Erro no servidor!")
     })
-
     @GetMapping("/products/{id}")
     public ResponseEntity<Object> getOneProduct(@PathVariable(value = "id") UUID id){
         Optional<ProductModel> product0 = productRepository.findById(id);
@@ -94,6 +94,7 @@ public class ProductController {
                 .status(HttpStatus.OK)
                 .body(product0.get());
     }
+
     @Operation(
             summary = "Realiza a atualização de um produto na base de dados.",
             description = "Atualiza um produto.")
@@ -144,4 +145,28 @@ public class ProductController {
                 .body("Product deleted sucessfully.");
     }
 
+    @Operation(
+            summary = "Realiza a busca de produtos que possuam o nome como parte seu titulo.",
+            description = "Busca produtos por parte de seu nome.")
+    @ApiResponses(value = {
+            @ApiResponse(responseCode = "200", description = "Busca realizada com sucesso!"),
+            @ApiResponse(responseCode = "422", description = "Parâmetro inválido!"),
+            @ApiResponse(responseCode = "500", description = "Erro no servidor!")
+    })
+    @GetMapping("/products/byName/")
+    public ResponseEntity<List<ProductModel>> getProductsByName(@RequestParam(value = "name") String name){
+        List<ProductModel> productlistByName = productRepository.getProductByName(name);
+
+        if (!productlistByName.isEmpty()){
+            for (ProductModel product : productlistByName){
+                product.add(linkTo(methodOn(ProductController.class).getProductsByName(name)).withRel("Products List with similar name's products"));
+            }
+        }
+
+        return ResponseEntity
+                .status(HttpStatus.OK)
+                .body(productlistByName);
+    }
+
 }
+
